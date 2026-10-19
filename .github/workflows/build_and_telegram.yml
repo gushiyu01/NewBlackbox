@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-and-send:
     runs-on: ubuntu-latest
@@ -161,4 +164,31 @@ jobs:
               fi
             fi
           done
+
+      - name: Publish Release APK to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(grep -oP 'versionName\s*=\s*"\K[^"]+' build.gradle)
+          TAG="v${VERSION}"
+          APK=$(find ./app/build/outputs/apk/release -name "*universal*.apk" | head -n 1)
+          if [ -z "$APK" ]; then
+            APK=$(find ./app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          fi
+          APK_NAME=$(basename "$APK")
+          echo "Publishing $APK_NAME as tag $TAG"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # replace the release on the same tag so the tag always tracks the latest build
+          RELEASE_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG" | jq -r '.id // empty')
+          if [ -n "$RELEASE_ID" ]; then
+            curl -s -X DELETE -H "Authorization: token $GH_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
+          fi
+          git push origin :refs/tags/$TAG 2>/dev/null || true
+
+          NOTES="Universal APK built from commit ${{ github.sha }} (${{ github.event.head_commit.message }})"
+          gh release create "$TAG" "$APK" --title "$TAG" --notes "$NOTES"
 
