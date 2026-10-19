@@ -36,7 +36,13 @@ public abstract class ClientConfiguration {
     }
 
     
+
+    public String getLogSenderBotToken() {
+        return null;
+    }
+
+
     public String getLogSenderChatId() {
-        return "-1003719573856";
+        return null;
     }
 }

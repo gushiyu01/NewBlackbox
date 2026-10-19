@@ -25,6 +25,43 @@ class BlackBoxLoader {
 
     private var mDisableFlagSecure by AppSharedPreferenceDelegate(App.getContext(), false)
 
+    private var mLogBotToken by AppSharedPreferenceDelegate(App.getContext(), "")
+    private var mLogChatId by AppSharedPreferenceDelegate(App.getContext(), "")
+
+    fun logBotToken(): String {
+        return try {
+            mLogBotToken
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting logBotToken: ${e.message}")
+            ""
+        }
+    }
+
+    fun invalidLogBotToken(token: String) {
+        try {
+            this.mLogBotToken = token
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting logBotToken: ${e.message}")
+        }
+    }
+
+    fun logChatId(): String {
+        return try {
+            mLogChatId
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting logChatId: ${e.message}")
+            ""
+        }
+    }
+
+    fun invalidLogChatId(chatId: String) {
+        try {
+            this.mLogChatId = chatId
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting logChatId: ${e.message}")
+        }
+    }
+
     fun hideRoot(): Boolean {
         return try {
             mHideRoot
@@ -269,6 +306,14 @@ class BlackBoxLoader {
                                         Log.e(TAG, "Error checking disableFlagSecure: ${e.message}")
                                         false
                                     }
+                                }
+
+                                override fun getLogSenderBotToken(): String {
+                                    return logBotToken()
+                                }
+
+                                override fun getLogSenderChatId(): String {
+                                    return logChatId()
                                 }
 
                                 override fun requestInstallPackage(

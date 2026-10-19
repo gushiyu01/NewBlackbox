@@ -1,6 +1,7 @@
 package top.niunaijun.blackboxa.view.setting
 
 import android.os.Bundle
+import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import top.niunaijun.blackbox.BlackBoxCore
@@ -45,6 +46,35 @@ class SettingFragment : PreferenceFragmentCompat() {
         }
 
         initSendLogs()
+        initLogSenderConfig()
+    }
+
+    private fun initLogSenderConfig() {
+        val botTokenPreference: EditTextPreference? = findPreference("log_bot_token")
+        botTokenPreference?.let {
+            it.text = AppManager.mBlackBoxLoader.logBotToken()
+            it.summary = it.text.ifEmpty { getString(R.string.log_bot_token_summary) }
+            it.setOnPreferenceChangeListener { preference, newValue ->
+                val value = newValue?.toString().orEmpty().trim()
+                AppManager.mBlackBoxLoader.invalidLogBotToken(value)
+                (preference as EditTextPreference).text = value
+                preference.summary = value.ifEmpty { getString(R.string.log_bot_token_summary) }
+                true
+            }
+        }
+
+        val chatIdPreference: EditTextPreference? = findPreference("log_chat_id")
+        chatIdPreference?.let {
+            it.text = AppManager.mBlackBoxLoader.logChatId()
+            it.summary = it.text.ifEmpty { getString(R.string.log_chat_id_summary) }
+            it.setOnPreferenceChangeListener { preference, newValue ->
+                val value = newValue?.toString().orEmpty().trim()
+                AppManager.mBlackBoxLoader.invalidLogChatId(value)
+                (preference as EditTextPreference).text = value
+                preference.summary = value.ifEmpty { getString(R.string.log_chat_id_summary) }
+                true
+            }
+        }
     }
 
     private fun initGms() {
@@ -89,6 +119,12 @@ class SettingFragment : PreferenceFragmentCompat() {
     private fun initSendLogs() {
         val sendLogsPreference: Preference? = findPreference("send_logs")
         sendLogsPreference?.setOnPreferenceClickListener {
+            val botToken = AppManager.mBlackBoxLoader.logBotToken()
+            val chatId = AppManager.mBlackBoxLoader.logChatId()
+            if (botToken.isEmpty() || chatId.isEmpty()) {
+                toast("Set your Telegram Bot Token and Chat ID first")
+                return@setOnPreferenceClickListener true
+            }
             it.isEnabled = false
             BlackBoxCore.get()
                     .sendLogs(
@@ -104,7 +140,7 @@ class SettingFragment : PreferenceFragmentCompat() {
                                 }
                             }
                     )
-            toast("Sending logs... (Check notifications for status)")
+            toast("Sending logs to your Telegram... (check notifications)")
             true
         }
     }

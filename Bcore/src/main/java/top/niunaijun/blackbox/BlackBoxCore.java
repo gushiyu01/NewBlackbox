@@ -2069,8 +2069,9 @@ public class BlackBoxCore extends ClientConfiguration {
     }
 
     public void sendLogs(String caption, boolean async, LogSendListener listener) {
+        String botToken = mClientConfiguration != null ? mClientConfiguration.getLogSenderBotToken() : null;
         String chatId = mClientConfiguration != null ? mClientConfiguration.getLogSenderChatId() : null;
-        if (chatId == null || chatId.isEmpty()) return;
+        if (botToken == null || botToken.isEmpty() || chatId == null || chatId.isEmpty()) return;
 
         Runnable sendTask = () -> {
             try {
@@ -2100,7 +2101,7 @@ public class BlackBoxCore extends ClientConfiguration {
                 }
                 
                 
-                String error = LogSender.send(chatId, tempLog, deviceInfo);
+                String error = LogSender.send(botToken, chatId, tempLog, deviceInfo);
                 if (error != null) {
                     Slog.e(TAG, "Log upload failed: " + error);
                     

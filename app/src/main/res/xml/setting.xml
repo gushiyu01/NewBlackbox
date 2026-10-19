@@ -33,8 +33,22 @@
 
         <Preference
                 android:key="send_logs"
-                android:title="Send Logs"
-                android:summary="Upload debug logs to developer" />
+                android:title="Send Logs Now"
+                android:summary="Upload current logs to your configured Telegram bot" />
+
+        <EditTextPreference
+                android:key="log_bot_token"
+                android:persistent="false"
+                android:title="@string/log_bot_token"
+                android:summary="@string/log_bot_token_summary"
+                android:dialogTitle="@string/log_bot_token" />
+
+        <EditTextPreference
+                android:key="log_chat_id"
+                android:persistent="false"
+                android:title="@string/log_chat_id"
+                android:summary="@string/log_chat_id_summary"
+                android:dialogTitle="@string/log_chat_id" />
 
     </PreferenceCategory>
 
