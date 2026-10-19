@@ -22,3 +22,8 @@
 .cxx
 local.properties
 /app/release/
+
+# Signing material - never commit
+*.jks
+*.keystore
+keystore.properties
