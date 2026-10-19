@@ -20,9 +20,6 @@ class BlackBoxLoader {
     private var mDaemonEnable by AppSharedPreferenceDelegate(App.getContext(), false)
     private var mShowShortcutPermissionDialog by AppSharedPreferenceDelegate(App.getContext(), true)
 
-    
-    private var mUseVpnNetwork by AppSharedPreferenceDelegate(App.getContext(), false)
-
     private var mDisableFlagSecure by AppSharedPreferenceDelegate(App.getContext(), false)
 
     private var mLogBotToken by AppSharedPreferenceDelegate(App.getContext(), "")
@@ -127,23 +124,6 @@ class BlackBoxLoader {
             this.mShowShortcutPermissionDialog = show
         } catch (e: Exception) {
             Log.e(TAG, "Error setting showShortcutPermissionDialog: ${e.message}")
-        }
-    }
-
-    fun useVpnNetwork(): Boolean {
-        return try {
-            mUseVpnNetwork
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting useVpnNetwork: ${e.message}")
-            false
-        }
-    }
-
-    fun invalidUseVpnNetwork(enable: Boolean) {
-        try {
-            this.mUseVpnNetwork = enable
-        } catch (e: Exception) {
-            Log.e(TAG, "Error setting useVpnNetwork: ${e.message}")
         }
     }
 
@@ -286,15 +266,6 @@ class BlackBoxLoader {
                                         mDaemonEnable
                                     } catch (e: Exception) {
                                         Log.e(TAG, "Error checking daemonEnable: ${e.message}")
-                                        false
-                                    }
-                                }
-
-                                override fun isUseVpnNetwork(): Boolean {
-                                    return try {
-                                        mUseVpnNetwork
-                                    } catch (e: Exception) {
-                                        Log.e(TAG, "Error checking useVpnNetwork: ${e.message}")
                                         false
                                     }
                                 }
