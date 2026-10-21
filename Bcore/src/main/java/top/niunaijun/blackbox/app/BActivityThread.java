@@ -463,7 +463,7 @@ public class BActivityThread extends IBActivityThread.Stub {
             } else {
                 sb.append(" INET=").append(caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET))
                         .append(" VALID=").append(caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED))
-                        .append(" transports=").append(Arrays.toString(caps.getTransportTypes()));
+                        .append(" caps=").append(caps);
             }
             android.net.NetworkInfo ni = cm.getActiveNetworkInfo();
             sb.append(" info=").append(ni == null ? "null" : ni.getTypeName() + "/" + ni.getState());
