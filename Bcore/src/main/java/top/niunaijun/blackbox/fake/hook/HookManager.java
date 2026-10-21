@@ -68,6 +68,7 @@ import top.niunaijun.blackbox.fake.service.IPermissionManagerProxy;
 import top.niunaijun.blackbox.fake.service.IPersistentDataBlockServiceProxy;
 import top.niunaijun.blackbox.fake.service.IPhoneSubInfoProxy;
 import top.niunaijun.blackbox.fake.service.IPowerManagerProxy;
+import top.niunaijun.blackbox.fake.service.IRoleManagerProxy;
 import top.niunaijun.blackbox.fake.service.ApkAssetsProxy;
 import top.niunaijun.blackbox.fake.service.ResourcesManagerProxy;
 import top.niunaijun.blackbox.fake.service.IShortcutManagerProxy;
@@ -188,6 +189,10 @@ public class HookManager {
             
             if (BuildCompat.isR()) {
                 addInjector(new IPermissionManagerProxy());
+            }
+
+            if (BuildCompat.isQ()) {
+                addInjector(new IRoleManagerProxy());
             }
             
             if (BuildCompat.isQ()) {
