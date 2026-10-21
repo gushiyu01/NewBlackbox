@@ -356,36 +356,60 @@ public class BActivityThread extends IBActivityThread.Stub {
     }
 
     /**
-     * Diagnostic only: records the WebView data directory the guest process will
-     * actually use, plus how the framework answers the INTERNET permission check.
-     * Chromium's HTTP cache lives under that directory and it asks for the
-     * permission before opening a socket; a failure in either place surfaces as
-     * net::ERR_CACHE_MISS on every page load, so both need to be visible.
+     * Diagnostic only: reports where Chromium will put its HTTP cache, whether
+     * that directory is actually writable, and how the framework answers the
+     * INTERNET permission check.
+     *
+     * WebView.setDataDirectorySuffix() makes WebView append ".<suffix>" to the
+     * app_webview directory, so the base path reported here is not the one the
+     * cache uses. A cache that cannot be created makes every request look like a
+     * cache miss, which is exactly what net::ERR_CACHE_MISS means.
      */
-    private static void logWebViewEnv(String packageName, String processName, Context guestContext) {
+    private static void logWebViewEnv(String packageName, String processName, Context guestContext,
+                                      String suffix) {
         try {
             String guestDataDir = null;
-            String guestWebViewDir = null;
+            String baseWebViewDir = null;
+            String cacheDir = null;
+            String cacheWritable = "n/a";
             try {
                 if (guestContext != null) {
                     java.io.File files = guestContext.getFilesDir();
                     guestDataDir = files == null || files.getParentFile() == null
                             ? null : files.getParentFile().getAbsolutePath();
                     java.io.File d = guestContext.getDir("webview", Context.MODE_PRIVATE);
-                    guestWebViewDir = d == null ? null : d.getAbsolutePath();
+                    baseWebViewDir = d == null ? null : d.getAbsolutePath();
+                    if (d != null) {
+                        // The suffix WebView appends is applied to the directory name,
+                        // but the exact scheme is WebView-internal, so list what is
+                        // actually on disk instead of assuming it.
+                        java.io.File parent = d.getParentFile();
+                        StringBuilder listing = new StringBuilder();
+                        java.io.File[] siblings = parent == null ? null : parent.listFiles();
+                        if (siblings != null) {
+                            for (java.io.File f : siblings) {
+                                if (f.getName().contains("webview")) {
+                                    String[] kids = f.isDirectory() ? f.list() : null;
+                                    listing.append(f.getName())
+                                            .append(f.canWrite() ? "[w]" : "[ro]")
+                                            .append(kids == null ? "[]" : Arrays.toString(kids))
+                                            .append(';');
+                                }
+                            }
+                        }
+                        cacheDir = listing.length() == 0 ? "(nothing matching webview)" : listing.toString();
+                        java.io.File cache = new java.io.File(d, "HTTP Cache");
+                        boolean made = cache.exists() || cache.mkdirs();
+                        java.io.File probe = new java.io.File(cache, ".wvenv_probe");
+                        boolean wrote = made && probe.createNewFile();
+                        if (wrote) {
+                            probe.delete();
+                        }
+                        cacheWritable = "made=" + made + " wrote=" + wrote;
+                    }
                 }
             } catch (Throwable t) {
-                guestWebViewDir = "error:" + t;
-            }
-            String hostWebViewDir = null;
-            try {
-                Context host = BlackBoxCore.getContext();
-                if (host != null) {
-                    java.io.File d = host.getDir("webview", Context.MODE_PRIVATE);
-                    hostWebViewDir = d == null ? null : d.getAbsolutePath();
-                }
-            } catch (Throwable t) {
-                hostWebViewDir = "error:" + t;
+                cacheWritable = "error:" + t;
             }
             int hostCheck = -1;
             try {
@@ -403,8 +427,10 @@ public class BActivityThread extends IBActivityThread.Stub {
             Slog.d("WVENV", "pkg=" + packageName
                     + " proc=" + processName
                     + " guestDataDir=" + guestDataDir
-                    + " guestWebViewDir=" + guestWebViewDir
-                    + " hostWebViewDir=" + hostWebViewDir
+                    + " baseWebViewDir=" + baseWebViewDir
+                    + " suffix=" + suffix
+                    + " cacheDir=" + cacheDir
+                    + " cacheWrite=" + cacheWritable
                     + " hostInternet=" + hostCheck
                     + " guestInternet=" + guestCheck);
         } catch (Throwable t) {
