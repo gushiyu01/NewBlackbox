@@ -147,7 +147,8 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                         if (perm != null && (perm.equals(android.Manifest.permission.RECORD_AUDIO)
                                 || perm.equals("android.permission.FOREGROUND_SERVICE_MICROPHONE")
                                 || perm.equals(android.Manifest.permission.MODIFY_AUDIO_SETTINGS)
-                                || perm.equals(android.Manifest.permission.CAPTURE_AUDIO_OUTPUT))) {
+                                || perm.equals(android.Manifest.permission.CAPTURE_AUDIO_OUTPUT)
+                                || isNetworkPermission(perm))) {
                             packageInfo.requestedPermissionsFlags[i] |= PackageInfo.REQUESTED_PERMISSION_GRANTED;
                         }
                     }
@@ -432,8 +433,12 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                 Slog.d(TAG, "SimpleAudioPermissionHook: Granting notification/Xiaomi permission: " + permission + " to " + packageName);
                 return PackageManager.PERMISSION_GRANTED;
             }
-            
-            
+
+            if (isNetworkPermission(permission)) {
+                return PackageManager.PERMISSION_GRANTED;
+            }
+
+
             return method.invoke(who, args);
         }
     }
@@ -462,8 +467,12 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                 Slog.d(TAG, "CheckSelfPermission: Granting notification/Xiaomi permission: " + permission + " to " + packageName);
                 return PackageManager.PERMISSION_GRANTED;
             }
-            
-            
+
+            if (isNetworkPermission(permission)) {
+                return PackageManager.PERMISSION_GRANTED;
+            }
+
+
             return method.invoke(who, args);
         }
     }
@@ -554,6 +563,23 @@ public class IPackageManagerProxy extends BinderInvocationStub {
     }
 
     
+    /**
+     * Chromium asks PackageManager for these permissions by package name before
+     * it will let a page load. The guest package is not installed on the device,
+     * so the real lookup answers "denied", and WebView then serves only from
+     * cache and reports net::ERR_CACHE_MISS for every request. Plain Java
+     * networking in the same process never consults PackageManager, which is why
+     * an app can fetch over HTTP while every WebView page fails.
+     */
+    private static boolean isNetworkPermission(String permission) {
+        if (permission == null) {
+            return false;
+        }
+        return permission.equals(android.Manifest.permission.INTERNET)
+                || permission.equals(android.Manifest.permission.ACCESS_NETWORK_STATE)
+                || permission.equals(android.Manifest.permission.ACCESS_WIFI_STATE);
+    }
+
     private static boolean isAudioPermission(String permission) {
         if (permission == null) return false;
         return permission.equals(android.Manifest.permission.RECORD_AUDIO)
