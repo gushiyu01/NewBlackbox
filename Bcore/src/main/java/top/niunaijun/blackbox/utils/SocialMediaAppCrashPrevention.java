@@ -5,10 +5,8 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.webkit.WebView;
-import android.webkit.WebViewDatabase;
 import android.webkit.WebSettings;
 
-import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -123,26 +121,19 @@ public class SocialMediaAppCrashPrevention {
     
     private static void hookWebViewDatabase() {
         try {
-            
             Context context = BlackBoxCore.getContext();
-            if (context != null) {
-                String packageName = context.getPackageName();
-                String userId = String.valueOf(BActivityThread.getUserId());
-                String webViewDir = context.getApplicationInfo().dataDir + "/webview_" + userId;
-                
-                File webViewDirectory = new File(webViewDir);
-                if (!webViewDirectory.exists()) {
-                    webViewDirectory.mkdirs();
-                    Slog.d(TAG, "Created WebView directory: " + webViewDir);
-                }
-                
-                
-                System.setProperty("webview.data.dir", webViewDir);
-                System.setProperty("webview.cache.dir", webViewDir + "/cache");
-                System.setProperty("webview.cookies.dir", webViewDir + "/cookies");
+            if (context == null) {
+                return;
             }
+
+            // WebView on P+ is isolated through WebView.setDataDirectorySuffix(),
+            // which BActivityThread applies per proxy process. Setting the
+            // webview.data.dir/cache.dir/cookies.dir system properties on top of
+            // that pointed every guest at one shared, partly missing directory and
+            // made WebView report net::ERR_CACHE_MISS. Nothing needs to be done here.
+            Slog.d(TAG, "WebView data directory left to setDataDirectorySuffix");
         } catch (Exception e) {
-            Slog.w(TAG, "Could not hook WebViewDatabase: " + e.getMessage());
+            Slog.w(TAG, "Could not prepare WebView data directory: " + e.getMessage());
         }
     }
     
