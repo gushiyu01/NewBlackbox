@@ -430,9 +430,46 @@ public class BActivityThread extends IBActivityThread.Stub {
                     + " cacheDir=" + cacheDir
                     + " cacheWrite=" + cacheWritable
                     + " hostInternet=" + hostCheck
-                    + " guestInternet=" + guestCheck);
+                    + " guestInternet=" + guestCheck
+                    + " net=" + describeNetwork(guestContext));
         } catch (Throwable t) {
             Slog.w("WVENV", "probe failed: " + t);
+        }
+    }
+
+    /**
+     * Diagnostic only. Chromium decides whether it may open a socket from the
+     * ConnectivityManager network state, not from a socket test: when it believes
+     * the device is offline it only serves from cache and reports
+     * net::ERR_CACHE_MISS for anything not already cached. Java traffic in the
+     * same process bypasses that check, which is why an app can fetch over HTTP
+     * while WebView fails. Report what the container actually hands back.
+     */
+    private static String describeNetwork(Context guestContext) {
+        try {
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
+                    guestContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) {
+                return "cm=null";
+            }
+            StringBuilder sb = new StringBuilder();
+            android.net.Network active = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                    ? cm.getActiveNetwork() : null;
+            sb.append("active=").append(active);
+            android.net.NetworkCapabilities caps = active == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M
+                    ? null : cm.getNetworkCapabilities(active);
+            if (caps == null) {
+                sb.append(" caps=null");
+            } else {
+                sb.append(" INET=").append(caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET))
+                        .append(" VALID=").append(caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED))
+                        .append(" transports=").append(Arrays.toString(caps.getTransportTypes()));
+            }
+            android.net.NetworkInfo ni = cm.getActiveNetworkInfo();
+            sb.append(" info=").append(ni == null ? "null" : ni.getTypeName() + "/" + ni.getState());
+            return sb.toString();
+        } catch (Throwable t) {
+            return "error:" + t;
         }
     }
 
