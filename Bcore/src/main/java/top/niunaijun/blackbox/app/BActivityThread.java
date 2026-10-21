@@ -389,7 +389,20 @@ public class BActivityThread extends IBActivityThread.Stub {
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            WebView.setDataDirectorySuffix(getUserId() + ":" + packageName + ":" + processName);
+            // Chromium refuses to run WebView from two live processes sharing one
+            // data directory (crbug.com/558377). A guest app can end up in two
+            // proxy processes at once, e.g. when the container server restarts
+            // and forgets the instance already running, so the suffix needs the
+            // host-side proxy process name to stay unique per proxy process.
+            String hostProcessName = null;
+            try {
+                hostProcessName = Application.getProcessName();
+            } catch (Throwable ignored) {
+            }
+            if (hostProcessName == null) {
+                hostProcessName = String.valueOf(android.os.Process.myPid());
+            }
+            WebView.setDataDirectorySuffix(getUserId() + ":" + packageName + ":" + processName + ":" + hostProcessName);
         }
 
         VirtualRuntime.setupRuntime(processName, applicationInfo);
