@@ -365,8 +365,7 @@ public class BActivityThread extends IBActivityThread.Stub {
      * cache uses. A cache that cannot be created makes every request look like a
      * cache miss, which is exactly what net::ERR_CACHE_MISS means.
      */
-    private static void logWebViewEnv(String packageName, String processName, Context guestContext,
-                                      String suffix) {
+    private static void logWebViewEnv(String packageName, String processName, Context guestContext) {
         try {
             String guestDataDir = null;
             String baseWebViewDir = null;
@@ -428,7 +427,6 @@ public class BActivityThread extends IBActivityThread.Stub {
                     + " proc=" + processName
                     + " guestDataDir=" + guestDataDir
                     + " baseWebViewDir=" + baseWebViewDir
-                    + " suffix=" + suffix
                     + " cacheDir=" + cacheDir
                     + " cacheWrite=" + cacheWritable
                     + " hostInternet=" + hostCheck
