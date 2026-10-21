@@ -355,6 +355,63 @@ public class BActivityThread extends IBActivityThread.Stub {
         }
     }
 
+    /**
+     * Diagnostic only: records the WebView data directory the guest process will
+     * actually use, plus how the framework answers the INTERNET permission check.
+     * Chromium's HTTP cache lives under that directory and it asks for the
+     * permission before opening a socket; a failure in either place surfaces as
+     * net::ERR_CACHE_MISS on every page load, so both need to be visible.
+     */
+    private static void logWebViewEnv(String packageName, String processName, Context guestContext) {
+        try {
+            String guestDataDir = null;
+            String guestWebViewDir = null;
+            try {
+                if (guestContext != null) {
+                    java.io.File files = guestContext.getFilesDir();
+                    guestDataDir = files == null || files.getParentFile() == null
+                            ? null : files.getParentFile().getAbsolutePath();
+                    java.io.File d = guestContext.getDir("webview", Context.MODE_PRIVATE);
+                    guestWebViewDir = d == null ? null : d.getAbsolutePath();
+                }
+            } catch (Throwable t) {
+                guestWebViewDir = "error:" + t;
+            }
+            String hostWebViewDir = null;
+            try {
+                Context host = BlackBoxCore.getContext();
+                if (host != null) {
+                    java.io.File d = host.getDir("webview", Context.MODE_PRIVATE);
+                    hostWebViewDir = d == null ? null : d.getAbsolutePath();
+                }
+            } catch (Throwable t) {
+                hostWebViewDir = "error:" + t;
+            }
+            int hostCheck = -1;
+            try {
+                hostCheck = BlackBoxCore.getContext().getPackageManager()
+                        .checkPermission(android.Manifest.permission.INTERNET, "top.niunaijun.blackbox");
+            } catch (Throwable ignored) {
+            }
+            int guestCheck = -1;
+            try {
+                guestCheck = guestContext.getPackageManager()
+                        .checkPermission(android.Manifest.permission.INTERNET, packageName);
+            } catch (Throwable t) {
+                Slog.w("WVENV", "guest permission probe failed: " + t);
+            }
+            Slog.d("WVENV", "pkg=" + packageName
+                    + " proc=" + processName
+                    + " guestDataDir=" + guestDataDir
+                    + " guestWebViewDir=" + guestWebViewDir
+                    + " hostWebViewDir=" + hostWebViewDir
+                    + " hostInternet=" + hostCheck
+                    + " guestInternet=" + guestCheck);
+        } catch (Throwable t) {
+            Slog.w("WVENV", "probe failed: " + t);
+        }
+    }
+
     public synchronized void handleBindApplication(String packageName, String processName) {
         if (isInit())
             return;
@@ -403,6 +460,7 @@ public class BActivityThread extends IBActivityThread.Stub {
                 hostProcessName = String.valueOf(android.os.Process.myPid());
             }
             WebView.setDataDirectorySuffix(getUserId() + ":" + packageName + ":" + processName + ":" + hostProcessName);
+            logWebViewEnv(packageName, processName, packageContext);
         }
 
         VirtualRuntime.setupRuntime(processName, applicationInfo);

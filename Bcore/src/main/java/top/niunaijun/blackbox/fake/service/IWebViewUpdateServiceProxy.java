@@ -11,6 +11,7 @@ import black.android.webkit.BRIWebViewUpdateServiceStub;
 import top.niunaijun.blackbox.fake.hook.BinderInvocationStub;
 import top.niunaijun.blackbox.fake.hook.MethodHook;
 import top.niunaijun.blackbox.fake.hook.ProxyMethod;
+import top.niunaijun.blackbox.utils.Reflector;
 import top.niunaijun.blackbox.utils.Slog;
 
 
@@ -27,11 +28,14 @@ public class IWebViewUpdateServiceProxy extends BinderInvocationStub {
     protected Object getWho() {
         IBinder binder = BRServiceManager.get().getService(WEBVIEW_UPDATE_SERVICE);
         if (binder == null) {
+            Slog.w(TAG, "webviewupdate service is not published; proxy will not be installed");
             return null;
         }
         try {
             return BRIWebViewUpdateServiceStub.get().asInterface(binder);
         } catch (Throwable e) {
+            // ClassInvocationStub drops the whole proxy when getWho() returns null, so
+            // fall back to the raw binder to keep the hooks reachable.
             Slog.w(TAG, "asInterface failed, proxying the raw binder: " + e.getMessage());
             return binder;
         }
@@ -71,27 +75,49 @@ public class IWebViewUpdateServiceProxy extends BinderInvocationStub {
         }
     }
 
+    @ProxyMethod("waitForAndGetProvider")
+    public static class WaitForAndGetProvider extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            return disableMultiprocess(method.invoke(who, args));
+        }
+    }
+
     /**
-     * WebViewFactory reads the provider's "Multiprocess" meta-data and hands it to
-     * Chromium, which then starts its renderer in a separate OS process. That
-     * process gets none of the container's path redirection, so the guest's WebView
-     * data directory looks missing and pages fail with net::ERR_CACHE_MISS.
-     * Clearing the flag keeps rendering in the host process.
+     * WebViewFactory reads the provider's "Multiprocess" meta-data out of the
+     * WebViewProviderResponse this call returns, then hands it to Chromium. That
+     * response is a plain object, so the flag has to be cleared on the nested
+     * ProviderInfo/PackageInfo rather than on a bare PackageInfo[].
      */
     private static Object disableMultiprocess(Object result) {
-        if (!(result instanceof PackageInfo[])) {
+        if (result == null) {
+            return null;
+        }
+        if (result instanceof PackageInfo[]) {
+            for (PackageInfo info : (PackageInfo[]) result) {
+                clearFlag(info);
+            }
             return result;
         }
-        for (PackageInfo info : (PackageInfo[]) result) {
-            if (info == null || info.applicationInfo == null) {
-                continue;
+        try {
+            Object providerInfo = Reflector.on(result.getClass()).field("info").get(result);
+            if (providerInfo instanceof PackageInfo) {
+                clearFlag((PackageInfo) providerInfo);
             }
-            Bundle metaData = info.applicationInfo.metaData;
-            if (metaData != null && metaData.containsKey(MULTIPROCESS_METADATA)) {
-                metaData.putBoolean(MULTIPROCESS_METADATA, false);
-                Slog.d(TAG, "Disabled multiprocess WebView for " + info.packageName);
-            }
+        } catch (Throwable e) {
+            Slog.w(TAG, "could not reach provider info on " + result.getClass().getName() + ": " + e.getMessage());
         }
         return result;
+    }
+
+    private static void clearFlag(PackageInfo info) {
+        if (info == null || info.applicationInfo == null) {
+            return;
+        }
+        Bundle metaData = info.applicationInfo.metaData;
+        if (metaData != null && metaData.containsKey(MULTIPROCESS_METADATA)) {
+            metaData.putBoolean(MULTIPROCESS_METADATA, false);
+            Slog.d(TAG, "Disabled multiprocess WebView for " + info.packageName);
+        }
     }
 }
