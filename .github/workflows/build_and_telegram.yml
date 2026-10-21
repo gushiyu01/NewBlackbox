@@ -198,6 +198,7 @@ jobs:
           fi
           git push origin :refs/tags/$TAG 2>/dev/null || true
 
-          NOTES="Universal APK built from commit ${{ github.sha }} (${{ github.event.head_commit.message }})"
+          COMMIT_SUBJECT=$(git log -1 --pretty=%s)
+          NOTES="Universal APK built from commit ${{ github.sha }} ($COMMIT_SUBJECT)"
           gh release create "$TAG" "$APK" --title "$TAG" --notes "$NOTES"
 
