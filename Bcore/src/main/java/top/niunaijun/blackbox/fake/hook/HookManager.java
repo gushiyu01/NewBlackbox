@@ -82,6 +82,7 @@ import top.niunaijun.blackbox.fake.service.IVibratorServiceProxy;
 import top.niunaijun.blackbox.fake.service.IVpnManagerProxy;
 import top.niunaijun.blackbox.fake.service.IWifiManagerProxy;
 import top.niunaijun.blackbox.fake.service.IWifiScannerProxy;
+import top.niunaijun.blackbox.fake.service.IWebViewUpdateServiceProxy;
 import top.niunaijun.blackbox.fake.service.IWindowManagerProxy;
 import top.niunaijun.blackbox.fake.service.context.ContentServiceStub;
 import top.niunaijun.blackbox.fake.service.context.RestrictionsManagerStub;
@@ -177,6 +178,10 @@ public class HookManager {
             addInjector(new IWifiScannerProxy());
             addInjector(new ApkAssetsProxy());
             addInjector(new ResourcesManagerProxy());
+
+            if (BuildCompat.isOreo()) {
+                addInjector(new IWebViewUpdateServiceProxy());
+            }
             
             if (BuildCompat.isS()) {
                 addInjector(new IActivityClientProxy(null));
