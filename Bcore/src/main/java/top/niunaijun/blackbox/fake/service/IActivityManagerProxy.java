@@ -795,9 +795,43 @@ public class IActivityManagerProxy extends ClassInvocationStub {
                 Slog.d(TAG, "ActivityManager checkPermission: Granting storage/media permission: " + permission);
                 return PackageManager.PERMISSION_GRANTED;
             }
-            
+
+            if (isNetworkPermission(permission)) {
+                Slog.d(TAG, "ActivityManager checkPermission: Granting network permission: " + permission);
+                return PackageManager.PERMISSION_GRANTED;
+            }
+
             return method.invoke(who, args);
         }
+    }
+
+    @ProxyMethod("checkPermissionForDevice")
+    public static class checkPermissionForDevice extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            String permission = (String) args[0];
+            if (isNetworkPermission(permission)) {
+                Slog.d(TAG, "ActivityManager checkPermissionForDevice: Granting network permission: " + permission);
+                return PackageManager.PERMISSION_GRANTED;
+            }
+            return method.invoke(who, args);
+        }
+    }
+
+    /**
+     * Chromium asks ActivityManager, not PackageManager, whether the clone may use
+     * the network. The clone runs under the host uid but reports the guest package
+     * name, so the real check answers denied and WebView drops to cache-only,
+     * reporting net::ERR_CACHE_MISS on every page.
+     */
+    private static boolean isNetworkPermission(String permission) {
+        if (permission == null) return false;
+        return permission.equals(Manifest.permission.INTERNET)
+                || permission.equals(Manifest.permission.ACCESS_NETWORK_STATE)
+                || permission.equals(Manifest.permission.ACCESS_WIFI_STATE)
+                || permission.equals(Manifest.permission.CHANGE_NETWORK_STATE)
+                || permission.equals(Manifest.permission.CHANGE_WIFI_STATE)
+                || permission.equals(Manifest.permission.CHANGE_WIFI_MULTICAST_STATE);
     }
 
     
