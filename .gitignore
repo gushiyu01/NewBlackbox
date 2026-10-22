@@ -27,3 +27,6 @@ local.properties
 *.jks
 *.keystore
 keystore.properties
+
+# Local assistant scratch space
+.claude/

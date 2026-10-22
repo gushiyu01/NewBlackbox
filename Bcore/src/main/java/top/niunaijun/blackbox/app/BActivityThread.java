@@ -355,124 +355,6 @@ public class BActivityThread extends IBActivityThread.Stub {
         }
     }
 
-    /**
-     * Diagnostic only: reports where Chromium will put its HTTP cache, whether
-     * that directory is actually writable, and how the framework answers the
-     * INTERNET permission check.
-     *
-     * WebView.setDataDirectorySuffix() makes WebView append ".<suffix>" to the
-     * app_webview directory, so the base path reported here is not the one the
-     * cache uses. A cache that cannot be created makes every request look like a
-     * cache miss, which is exactly what net::ERR_CACHE_MISS means.
-     */
-    private static void logWebViewEnv(String packageName, String processName, Context guestContext) {
-        try {
-            String guestDataDir = null;
-            String baseWebViewDir = null;
-            String cacheDir = null;
-            String cacheWritable = "n/a";
-            try {
-                if (guestContext != null) {
-                    java.io.File files = guestContext.getFilesDir();
-                    guestDataDir = files == null || files.getParentFile() == null
-                            ? null : files.getParentFile().getAbsolutePath();
-                    java.io.File d = guestContext.getDir("webview", Context.MODE_PRIVATE);
-                    baseWebViewDir = d == null ? null : d.getAbsolutePath();
-                    if (d != null) {
-                        // The suffix WebView appends is applied to the directory name,
-                        // but the exact scheme is WebView-internal, so list what is
-                        // actually on disk instead of assuming it.
-                        java.io.File parent = d.getParentFile();
-                        StringBuilder listing = new StringBuilder();
-                        java.io.File[] siblings = parent == null ? null : parent.listFiles();
-                        if (siblings != null) {
-                            for (java.io.File f : siblings) {
-                                if (f.getName().contains("webview")) {
-                                    String[] kids = f.isDirectory() ? f.list() : null;
-                                    listing.append(f.getName())
-                                            .append(f.canWrite() ? "[w]" : "[ro]")
-                                            .append(kids == null ? "[]" : Arrays.toString(kids))
-                                            .append(';');
-                                }
-                            }
-                        }
-                        cacheDir = listing.length() == 0 ? "(nothing matching webview)" : listing.toString();
-                        java.io.File cache = new java.io.File(d, "HTTP Cache");
-                        boolean made = cache.exists() || cache.mkdirs();
-                        java.io.File probe = new java.io.File(cache, ".wvenv_probe");
-                        boolean wrote = made && probe.createNewFile();
-                        if (wrote) {
-                            probe.delete();
-                        }
-                        cacheWritable = "made=" + made + " wrote=" + wrote;
-                    }
-                }
-            } catch (Throwable t) {
-                cacheWritable = "error:" + t;
-            }
-            int hostCheck = -1;
-            try {
-                hostCheck = BlackBoxCore.getContext().getPackageManager()
-                        .checkPermission(android.Manifest.permission.INTERNET, "top.niunaijun.blackbox");
-            } catch (Throwable ignored) {
-            }
-            int guestCheck = -1;
-            try {
-                guestCheck = guestContext.getPackageManager()
-                        .checkPermission(android.Manifest.permission.INTERNET, packageName);
-            } catch (Throwable t) {
-                Slog.w("WVENV", "guest permission probe failed: " + t);
-            }
-            Slog.d("WVENV", "pkg=" + packageName
-                    + " proc=" + processName
-                    + " guestDataDir=" + guestDataDir
-                    + " baseWebViewDir=" + baseWebViewDir
-                    + " cacheDir=" + cacheDir
-                    + " cacheWrite=" + cacheWritable
-                    + " hostInternet=" + hostCheck
-                    + " guestInternet=" + guestCheck
-                    + " net=" + describeNetwork(guestContext));
-        } catch (Throwable t) {
-            Slog.w("WVENV", "probe failed: " + t);
-        }
-    }
-
-    /**
-     * Diagnostic only. Chromium decides whether it may open a socket from the
-     * ConnectivityManager network state, not from a socket test: when it believes
-     * the device is offline it only serves from cache and reports
-     * net::ERR_CACHE_MISS for anything not already cached. Java traffic in the
-     * same process bypasses that check, which is why an app can fetch over HTTP
-     * while WebView fails. Report what the container actually hands back.
-     */
-    private static String describeNetwork(Context guestContext) {
-        try {
-            android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
-                    guestContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-            if (cm == null) {
-                return "cm=null";
-            }
-            StringBuilder sb = new StringBuilder();
-            android.net.Network active = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-                    ? cm.getActiveNetwork() : null;
-            sb.append("active=").append(active);
-            android.net.NetworkCapabilities caps = active == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M
-                    ? null : cm.getNetworkCapabilities(active);
-            if (caps == null) {
-                sb.append(" caps=null");
-            } else {
-                sb.append(" INET=").append(caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET))
-                        .append(" VALID=").append(caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED))
-                        .append(" caps=").append(caps);
-            }
-            android.net.NetworkInfo ni = cm.getActiveNetworkInfo();
-            sb.append(" info=").append(ni == null ? "null" : ni.getTypeName() + "/" + ni.getState());
-            return sb.toString();
-        } catch (Throwable t) {
-            return "error:" + t;
-        }
-    }
-
     public synchronized void handleBindApplication(String packageName, String processName) {
         if (isInit())
             return;
@@ -521,7 +403,6 @@ public class BActivityThread extends IBActivityThread.Stub {
                 hostProcessName = String.valueOf(android.os.Process.myPid());
             }
             WebView.setDataDirectorySuffix(getUserId() + ":" + packageName + ":" + processName + ":" + hostProcessName);
-            logWebViewEnv(packageName, processName, packageContext);
         }
 
         VirtualRuntime.setupRuntime(processName, applicationInfo);
