@@ -1,55 +1,56 @@
-# BlackBox - Virtual Engine
+# BlackBox - 虚拟引擎
 
 <p align="center">
   <img src="assets/usage.gif" alt="BlackBox Banner" width="100%"/>
 </p>
 
-BlackBox is a virtual engine that allows you to clone and run virtual applications on Android devices without installing APKs. This project works on Android 5.0 to 14.0+ and supports multiple architectures (ARM64, ARMv7, x86).
+BlackBox 是一个虚拟引擎，可以在 Android 设备上克隆并运行应用，无需真正安装 APK。项目支持 Android 5.0 至 14.0+，并兼容多种架构（ARM64、ARMv7、x86）。
 
-## Overview
+## 概述
 
-This enhanced edition includes bug fixes, stability improvements, and Android 14+ compatibility tailored for modern devices.
+本版本在原项目基础上修复了若干缺陷、提升了稳定性，并针对现代设备补充了 Android 14+ 的兼容性处理。
 
-### Key Features
+### 主要特性
 
-*   **Virtual App Cloning**: Run multiple instances of applications.
-*   **Sandboxed Environment**: Isolated process execution.
-*   **No Root Required**: Runs entirely in userspace.
-*   **Multi-Architecture**: Support for 32-bit and 64-bit apps.
-*   **Device Spoofing**: Modify device information for virtual apps.
-*   **Fake Location**: Spoof GPS coordinates.
+*   **应用克隆**：同一应用可同时运行多个实例。
+*   **沙箱环境**：进程相互隔离。
+*   **无需 Root**：完全以普通应用权限运行。
+*   **多架构支持**：同时支持 32 位与 64 位应用。
+*   **设备伪装**：可修改虚拟应用看到的设备信息。
+*   **虚拟定位**：可伪造 GPS 坐标。
 
-## Requirements
+## 环境要求
 
-*   **Android Version**: Android 5.0 (API 21) or higher.
-*   **RAM**: 2GB minimum recommended.
-*   **Architecture**: ARMv7a, ARM64-v8a, x86.
+*   **Android 版本**：Android 5.0（API 21）及以上。
+*   **内存**：建议 2GB 以上。
+*   **架构**：ARMv7a、ARM64-v8a、x86。
 
-## Build Instructions
+## 构建说明
 
-### Prerequisites
-*   Android Studio (Arctic Fox or newer)
+### 前置条件
+
+*   Android Studio（Arctic Fox 或更新版本）
 *   JDK 17
 *   Android SDK 34+
-*   NDK (Version 29.0.13846066)
+*   NDK（版本 29.0.13846066）
 
-### Building from Source
+### 从源码构建
 
 ```bash
-# Clone the repository
+# 克隆仓库
 git clone https://github.com/your-repo/NewBlackbox.git
 cd NewBlackbox
 
-# Build Debug APK
+# 构建 Debug APK
 ./gradlew assembleDebug
 
-# Build Release APK
+# 构建 Release APK
 ./gradlew assembleRelease
 ```
 
-## Integration
+## 集成方式
 
-To use BlackBox Core in your own project, add the AAR dependency:
+如需在自己的项目中使用 BlackBox Core，请添加 AAR 依赖：
 
 ```gradle
 dependencies {
@@ -57,68 +58,68 @@ dependencies {
 }
 ```
 
-Refer to `Docs.md` for detailed API documentation.
+详细 API 文档见 `Docs.md`。
 
-## Troubleshooting
+## 常见问题
 
-*   **App Crashes**: Check logcat for UID mismatches or permission errors.
-*   **Installation Failures**: Verify potential architecture mismatches or storage permissions.
-*   **Android 15**: Ensure you are using the latest build which handles stricter security policies.
+*   **应用崩溃**：检查 logcat 中是否存在 UID 不匹配或权限错误。
+*   **安装失败**：确认架构是否匹配，以及存储权限是否正常。
+*   **Android 15**：请使用最新构建，已针对更严格的安全策略做过适配。
 
-## Changelog
+## 更新日志
 
 ### 4.1.0
 
-This release fixes two container bugs that made sandboxed apps unusable on modern Android, removes a security hole in the crash reporter, and drops the VPN feature.
+本版本修复了两个导致沙箱应用在现代 Android 上无法使用的容器缺陷，堵上了崩溃日志上报中的一处安全问题，并移除了 VPN 功能。
 
-#### Fixed: settings screen crashed inside cloned apps
+#### 修复：克隆应用内点击设置页导致闪退
 
-Tapping the settings button inside a cloned app (for example Muse / `com.facebook.aura`) killed the process immediately, with no crash log.
+在克隆应用（例如 Muse / `com.facebook.aura`）中点击设置按钮，进程会立即退出，且不产生崩溃日志。
 
-The framework threw `SecurityException: Package X does not belong to <host uid>`. When the app asked `RoleManager` whether it holds a role, the framework verified that the calling UID owns the queried package. Guest apps run under the host UID but report the guest package name, so the check threw and aborted settings initialisation.
+框架抛出的异常是 `SecurityException: Package X does not belong to <host uid>`。应用向 `RoleManager` 查询自己是否持有某个角色时，框架会先校验调用方 UID 是否拥有被查询的包名。虚拟应用运行在宿主 UID 下，却上报虚拟应用的包名，校验因此失败，设置页的初始化被中断。
 
-Added `IRoleManagerProxy` to answer the `role` service inside the container: `isRoleHeld` and `isRoleHeldAsUser` return `false`, `isRoleAvailable` returns `true`, and `getRoleHoldersAsUser` returns an empty list. Registered in `HookManager` on Android 10+.
+新增 `IRoleManagerProxy` 在容器内接管 `role` 服务：`isRoleHeld` 与 `isRoleHeldAsUser` 返回 `false`，`isRoleAvailable` 返回 `true`，`getRoleHoldersAsUser` 返回空列表。在 Android 10 及以上注册进 `HookManager`。
 
-#### Fixed: every WebView page failed with net::ERR_CACHE_MISS
+#### 修复：所有网页报 net::ERR_CACHE_MISS
 
-Pages opened inside cloned apps — in Muse, WeChat, anywhere — failed with `net::ERR_CACHE_MISS`, while the same apps fetched over HTTP from Java without trouble.
+克隆应用内打开的网页——Muse、微信，任何应用——都会报 `net::ERR_CACHE_MISS`，但同一应用的 Java 网络请求却完全正常。
 
-Chromium asks **`ActivityManager.checkPermission`** for `INTERNET`, by package name, before it will open a socket. The cloned package is not registered in the real system PackageManager, so the lookup answered `DENIED`. Chromium then fell back to cache-only loading, and an empty cache produces `ERR_CACHE_MISS`. Java networking never consults that check, which is why an app could reach the network while every WebView page failed.
+Chromium 在建立连接前，会按包名向 **`ActivityManager.checkPermission`** 查询 `INTERNET` 权限。克隆应用没有注册在系统真实的 PackageManager 中，这次查询返回 `DENIED`。Chromium 因此退化为只从缓存加载，而缓存为空就表现为 `ERR_CACHE_MISS`。Java 网络栈不经过这项检查，这正是“应用能联网、网页却全部失败”的原因。
 
-Three files now report the network permissions as granted, covering both permission paths:
+现在由三个文件共同把网络权限报告为已授予，覆盖两条权限查询路径：
 
-| File | Change |
+| 文件 | 改动 |
 |---|---|
-| `IActivityManagerProxy` | network branch in `checkPermission`, new `checkPermissionForDevice` hook |
-| `IPackageManagerProxy` | `checkPermission`, `checkSelfPermission`, `getPackageInfo` |
-| `PackageManagerCompat` | `requestedPermissionsFlags` in generated `PackageInfo` |
+| `IActivityManagerProxy` | `checkPermission` 中增加网络权限分支，新增 `checkPermissionForDevice` 钩子 |
+| `IPackageManagerProxy` | `checkPermission`、`checkSelfPermission`、`getPackageInfo` 三处 |
+| `PackageManagerCompat` | 生成的 `PackageInfo` 中设置 `requestedPermissionsFlags` |
 
-Permissions covered: `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `CHANGE_NETWORK_STATE`, `CHANGE_WIFI_STATE`, `CHANGE_WIFI_MULTICAST_STATE`.
+覆盖的权限：`INTERNET`、`ACCESS_NETWORK_STATE`、`ACCESS_WIFI_STATE`、`CHANGE_NETWORK_STATE`、`CHANGE_WIFI_STATE`、`CHANGE_WIFI_MULTICAST_STATE`。
 
-The `ActivityManager` hook is the one that matters; changing only PackageManager had no effect, because Chromium does not query it.
+其中起决定作用的是 `ActivityManager` 那一处；只改 PackageManager 没有效果，因为 Chromium 不查询它。
 
-#### Security: crash logs no longer leave through a third party
+#### 安全：崩溃日志不再经第三方中转
 
-`LogSender` used to upload the full logcat plus a device fingerprint to `logs-sender-api.vercel.app`, which relayed them to a Telegram group controlled by someone else. Automatic reporting is still available, but it now posts to a bot the user configures on the app's settings screen. No credentials are hardcoded, since this repository is public.
+`LogSender` 原本会把完整的 logcat 以及设备指纹上传到 `logs-sender-api.vercel.app`，再由该服务转发到一个由他人控制的 Telegram 群。自动上报功能保留，但改为发送到用户在应用设置页中自行配置的机器人。本仓库是公开的，因此不硬编码任何凭据。
 
-#### Removed: VPN mode
+#### 移除：VPN 模式
 
-The VPN toggle prompted for a VPN connection on every launch and served no purpose here. `ProxyVpnService`, its manifest declaration, the `BIND_VPN_SERVICE` permission and the calling code are gone.
+VPN 开关原本每次启动都会弹出 VPN 连接授权，在本项目中并无实际用途。与之相关的 `ProxyVpnService`、清单中的服务声明、`BIND_VPN_SERVICE` 权限以及调用代码均已删除。
 
-#### Build
+#### 构建
 
-*   Universal APK only — per-ABI splits dropped.
-*   Releases are signed with a pinned keystore, so upgrading in place no longer loses app data. A CI-generated debug key changes on every runner, and Android refuses to install over a mismatched signature.
-*   Each build publishes a GitHub Release tagged by `versionName`.
+*   仅产出 universal APK，取消了按 ABI 拆分。
+*   Release 使用固定 keystore 签名，覆盖安装不再丢失应用数据。CI 每次生成的 debug 密钥都不相同，而 Android 会拒绝安装签名不一致的包。
+*   每次构建都会按 `versionName` 创建对应的 GitHub Release。
 
-## Credits
+## 致谢
 
-*   **Main Developer**: ALEX502
-*   **Original Framework**: VirtualApp, VirtualAPK
-*   **Native Hooks**: Dobby, xDL
-*   **Reflection**: BlackReflection, FreeReflection
+*   **主要开发者**：ALEX502
+*   **原始框架**：VirtualApp、VirtualAPK
+*   **Native Hook**：Dobby、xDL
+*   **反射**：BlackReflection、FreeReflection
 
-## License
+## 许可证
 
 Copyright 2022 BlackBox
 
