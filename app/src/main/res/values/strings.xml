@@ -63,6 +63,7 @@
     <string name="log_chat_id">Telegram Chat ID</string>
     <string name="log_chat_id_summary">Your Telegram numeric user ID. Get it from @userinfobot.</string>
     <string name="gms_manager">GMS Manager</string>
+    <string name="gms_manager_summary">Install MicroG inside this box. No Google services are needed on the phone.</string>
     <string name="jump_gms">Go to Gms Manager</string>
     <string name="enable_gms">Enable Service</string>
     <string name="enable_gms_hint">Opening Google services can make youtube and other software that strongly rely on Google play services run normally.</string>
