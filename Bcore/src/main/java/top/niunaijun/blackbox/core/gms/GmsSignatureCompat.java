@@ -2,6 +2,8 @@ package top.niunaijun.blackbox.core.gms;
 
 import android.content.pm.Signature;
 
+import top.niunaijun.blackbox.core.pm.PackageSignatureResolver;
+
 /**
  * MicroG is signed with its own key, but apps that talk to Play services check
  * that the provider carries Google's certificate. Inside the container the
@@ -22,6 +24,18 @@ public final class GmsSignatureCompat {
     public static boolean shouldSpoof(String packageName) {
         return MicroGArtifacts.GMS_PACKAGE.equals(packageName)
                 || MicroGArtifacts.VENDING_PACKAGE.equals(packageName);
+    }
+
+    /**
+     * Single resolution point for both signature APIs: the caller feeds the same
+     * result into PackageInfo.signatures and PackageInfo.signingInfo, so the two
+     * cannot disagree.
+     */
+    public static Signature[] resolve(String packageName, Signature[] container, Signature[] host) {
+        if (shouldSpoof(packageName)) {
+            return googleSignatures();
+        }
+        return PackageSignatureResolver.preferContainer(container, host);
     }
 
     public static Signature[] googleSignatures() {

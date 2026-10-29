@@ -7,6 +7,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import android.content.pm.Signature;
+
 import java.security.MessageDigest;
 
 public class GmsSignatureCompatTest {
@@ -40,5 +42,21 @@ public class GmsSignatureCompatTest {
         }
         assertEquals("f0fd6c5b410f25cb25c3b53346c8972fae30f8ee7411df910480ad6b2d60db83",
                 hex.toString());
+    }
+
+    @Test
+    public void resolveGivesGoogleCertsToGoogleComponents() {
+        Signature[] container = {new Signature(new byte[]{1})};
+        Signature[] resolved = GmsSignatureCompat.resolve("com.google.android.gms", container, null);
+        assertEquals(1, resolved.length);
+        assertEquals(1095, resolved[0].toByteArray().length);
+    }
+
+    @Test
+    public void resolveKeepsContainerCertsForOtherPackages() {
+        Signature[] container = {new Signature(new byte[]{1})};
+        Signature[] host = {new Signature(new byte[]{2})};
+        assertArrayEquals(container,
+                GmsSignatureCompat.resolve("com.facebook.aura", container, host));
     }
 }

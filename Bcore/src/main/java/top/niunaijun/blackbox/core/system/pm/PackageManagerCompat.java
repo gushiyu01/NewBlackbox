@@ -29,7 +29,6 @@ import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.core.env.AppSystemEnv;
 import top.niunaijun.blackbox.core.env.BEnvironment;
 import top.niunaijun.blackbox.core.gms.GmsSignatureCompat;
-import top.niunaijun.blackbox.core.pm.PackageSignatureResolver;
 import top.niunaijun.blackbox.entity.pm.InstallOption;
 import top.niunaijun.blackbox.utils.ArrayUtils;
 import top.niunaijun.blackbox.utils.FileUtils;
@@ -201,24 +200,23 @@ public class PackageManagerCompat {
             base = BlackBoxCore.getContext().getPackageManager().getPackageInfo(p.packageName, flags);
         } catch (PackageManager.NameNotFoundException ignored) {
         }
+        Signature[] resolvedSignatures = GmsSignatureCompat.resolve(
+                p.packageName,
+                p.mSignatures,
+                base == null ? null : base.signatures);
         if ((flags & PackageManager.GET_SIGNATURES) != 0) {
-            pi.signatures = PackageSignatureResolver.preferContainer(
-                    p.mSignatures,
-                    base == null ? null : base.signatures);
+            pi.signatures = resolvedSignatures;
         }
         if (BuildCompat.isPie()) {
             if ((flags & PackageManager.GET_SIGNING_CERTIFICATES) != 0) {
-                if (base == null || p.mSigningDetails != null) {
+                if (resolvedSignatures != null) {
                     PackageParser.SigningDetails signingDetails = PackageParser.SigningDetails.UNKNOWN;
-                    BRPackageParserSigningDetails.get(signingDetails)._set_signatures(p.mSigningDetails.signatures);
+                    BRPackageParserSigningDetails.get(signingDetails)._set_signatures(resolvedSignatures);
                     pi.signingInfo = BRSigningInfo.get()._new(signingDetails);
-                } else {
+                } else if (base != null) {
                     pi.signingInfo = base.signingInfo;
                 }
             }
-        }
-        if (GmsSignatureCompat.shouldSpoof(p.packageName)) {
-            pi.signatures = GmsSignatureCompat.googleSignatures();
         }
         return pi;
     }
