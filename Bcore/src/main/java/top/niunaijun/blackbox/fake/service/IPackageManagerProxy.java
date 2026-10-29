@@ -24,9 +24,7 @@ import black.android.app.ContextImpl;
 import black.android.content.pm.BRPackageManager;
 import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.app.BActivityThread;
-import top.niunaijun.blackbox.core.GmsCore;
 import top.niunaijun.blackbox.core.env.AppSystemEnv;
-import top.niunaijun.blackbox.core.gms.GoogleUidCompat;
 import top.niunaijun.blackbox.fake.FakeCore;
 import top.niunaijun.blackbox.fake.hook.BinderInvocationStub;
 import top.niunaijun.blackbox.fake.hook.MethodHook;
@@ -134,10 +132,15 @@ public class IPackageManagerProxy extends BinderInvocationStub {
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             String packageName = (String) args[0];
             int flags = MethodParameterUtils.toInt(args[1]);
-
+            
+            
+            if ("com.android.vending".equals(packageName)) {
+                return createFakeGooglePlayServicesPackageInfo();
+            }
+            
             PackageInfo packageInfo = BlackBoxCore.getBPackageManager().getPackageInfo(packageName, flags, BlackBoxCore.getUserId());
             if (packageInfo != null) {
-
+                
                 if (packageInfo.requestedPermissions != null && packageInfo.requestedPermissionsFlags != null) {
                     for (int i = 0; i < packageInfo.requestedPermissions.length; i++) {
                         String perm = packageInfo.requestedPermissions[i];
@@ -151,12 +154,6 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                     }
                 }
                 return packageInfo;
-            }
-            // Only stand in for the Play Store when the container really has none. A
-            // placeholder returned while FakeStore is installed carries no signature,
-            // so MicroG's self-check reads it as an unsigned store and reports failure.
-            if ("com.android.vending".equals(packageName)) {
-                return createFakeGooglePlayServicesPackageInfo();
             }
             if (AppSystemEnv.isOpenPackage(packageName)) {
                 return method.invoke(who, args);
@@ -363,9 +360,6 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                 uid = (int) args[0];
             }
             String[] packagesForUid = BlackBoxCore.getBPackageManager().getPackagesForUid(uid);
-            packagesForUid = GoogleUidCompat.withGoogleComponents(
-                    packagesForUid,
-                    GmsCore.installedGoogleComponents(BlackBoxCore.getUserId()));
             Slog.d(TAG, args[0] + " , " + BActivityThread.getAppProcessName() + " GetPackagesForUid: " + Arrays.toString(packagesForUid));
             return packagesForUid;
         }

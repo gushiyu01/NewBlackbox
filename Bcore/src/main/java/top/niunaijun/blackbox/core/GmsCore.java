@@ -111,20 +111,4 @@ public class GmsCore {
     public static boolean isInstalledGoogleService(int userId) {
         return BlackBoxCore.get().isInstalled(GMS_PKG, userId);
     }
-
-    /** Google components present in this user, used to emulate their shared uid. */
-    public static java.util.List<String> installedGoogleComponents(int userId) {
-        java.util.List<String> installed = new java.util.ArrayList<>();
-        for (String packageName : GOOGLE_SERVICE) {
-            if (BlackBoxCore.get().isInstalled(packageName, userId)) {
-                installed.add(packageName);
-            }
-        }
-        for (String packageName : GOOGLE_APP) {
-            if (BlackBoxCore.get().isInstalled(packageName, userId)) {
-                installed.add(packageName);
-            }
-        }
-        return installed;
-    }
 }

@@ -72,10 +72,16 @@ class SettingFragment : PreferenceFragmentCompat() {
 
     private fun initGms() {
         val gmsManagerPreference: Preference = (findPreference("gms_manager")!!)
-        gmsManagerPreference.summary = getString(R.string.gms_manager_summary)
-        gmsManagerPreference.setOnPreferenceClickListener {
-            GmsManagerActivity.start(requireContext())
-            true
+
+        if (BlackBoxCore.get().isSupportGms) {
+
+            gmsManagerPreference.setOnPreferenceClickListener {
+                GmsManagerActivity.start(requireContext())
+                true
+            }
+        } else {
+            gmsManagerPreference.summary = getString(R.string.no_gms)
+            gmsManagerPreference.isEnabled = false
         }
     }
 

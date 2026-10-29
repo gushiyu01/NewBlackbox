@@ -13,7 +13,6 @@ import android.content.pm.PackageParser;
 import android.content.pm.PermissionInfo;
 import android.content.pm.ProviderInfo;
 import android.content.pm.ServiceInfo;
-import android.content.pm.Signature;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.os.Build;
@@ -29,7 +28,6 @@ import black.android.content.res.BRAssetManager;
 import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.core.env.AppSystemEnv;
 import top.niunaijun.blackbox.core.env.BEnvironment;
-import top.niunaijun.blackbox.core.gms.GmsSignatureCompat;
 import top.niunaijun.blackbox.entity.pm.InstallOption;
 import top.niunaijun.blackbox.utils.ArrayUtils;
 import top.niunaijun.blackbox.utils.FileUtils;
@@ -201,43 +199,25 @@ public class PackageManagerCompat {
             base = BlackBoxCore.getContext().getPackageManager().getPackageInfo(p.packageName, flags);
         } catch (PackageManager.NameNotFoundException ignored) {
         }
-        Signature[] resolvedSignatures = GmsSignatureCompat.resolve(
-                p.packageName,
-                p.mSignatures,
-                base == null ? null : base.signatures);
         if ((flags & PackageManager.GET_SIGNATURES) != 0) {
-            pi.signatures = resolvedSignatures;
+            if (base == null) {
+                pi.signatures = p.mSignatures;
+            } else {
+                pi.signatures = base.signatures;
+            }
         }
         if (BuildCompat.isPie()) {
             if ((flags & PackageManager.GET_SIGNING_CERTIFICATES) != 0) {
-                if (resolvedSignatures != null) {
-                    pi.signingInfo = BRSigningInfo.get()._new(signingDetailsOf(resolvedSignatures));
-                } else if (base != null) {
+                if (base == null) {
+                    PackageParser.SigningDetails signingDetails = PackageParser.SigningDetails.UNKNOWN;
+                    BRPackageParserSigningDetails.get(signingDetails)._set_signatures(p.mSigningDetails.signatures);
+                    pi.signingInfo = BRSigningInfo.get()._new(signingDetails);
+                } else {
                     pi.signingInfo = base.signingInfo;
                 }
             }
         }
         return pi;
-    }
-
-    /**
-     * SigningInfo keeps the SigningDetails it was built from, so handing out a
-     * shared instance would make every package report whichever signatures were
-     * written last. Build a fresh one per package when the runtime constructor is
-     * reachable, and fall back to the shared instance otherwise.
-     */
-    private static PackageParser.SigningDetails signingDetailsOf(Signature[] signatures) {
-        try {
-            PackageParser.SigningDetails fresh =
-                    BRPackageParserSigningDetails.get()._new(signatures, 3, null);
-            if (fresh != null) {
-                return fresh;
-            }
-        } catch (Throwable ignored) {
-        }
-        PackageParser.SigningDetails shared = PackageParser.SigningDetails.UNKNOWN;
-        BRPackageParserSigningDetails.get(shared)._set_signatures(signatures);
-        return shared;
     }
 
     public static ActivityInfo generateActivityInfo(BPackage.Activity a, int flags, BPackageUserState state, int userId) {

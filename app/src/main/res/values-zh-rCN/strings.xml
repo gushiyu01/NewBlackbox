@@ -57,7 +57,6 @@
     <string name="other">其它</string>
     <string name="daemon_enable">开启守护进程</string>
     <string name="gms_manager">GMS管理</string>
-    <string name="gms_manager_summary">在当前 Box 内安装 MicroG，手机无需安装 Google 服务。</string>
     <string name="jump_gms">跳转到GMS管理界面</string>
     <string name="enable_gms">开启服务</string>
     <string name="enable_gms_hint">开启Google服务，可以让Youtube等强依赖Google Play Services的软件能正常运行。</string>
