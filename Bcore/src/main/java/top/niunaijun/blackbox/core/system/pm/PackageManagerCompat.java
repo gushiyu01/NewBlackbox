@@ -211,15 +211,33 @@ public class PackageManagerCompat {
         if (BuildCompat.isPie()) {
             if ((flags & PackageManager.GET_SIGNING_CERTIFICATES) != 0) {
                 if (resolvedSignatures != null) {
-                    PackageParser.SigningDetails signingDetails = PackageParser.SigningDetails.UNKNOWN;
-                    BRPackageParserSigningDetails.get(signingDetails)._set_signatures(resolvedSignatures);
-                    pi.signingInfo = BRSigningInfo.get()._new(signingDetails);
+                    pi.signingInfo = BRSigningInfo.get()._new(signingDetailsOf(resolvedSignatures));
                 } else if (base != null) {
                     pi.signingInfo = base.signingInfo;
                 }
             }
         }
         return pi;
+    }
+
+    /**
+     * SigningInfo keeps the SigningDetails it was built from, so handing out a
+     * shared instance would make every package report whichever signatures were
+     * written last. Build a fresh one per package when the runtime constructor is
+     * reachable, and fall back to the shared instance otherwise.
+     */
+    private static PackageParser.SigningDetails signingDetailsOf(Signature[] signatures) {
+        try {
+            PackageParser.SigningDetails fresh =
+                    BRPackageParserSigningDetails.get()._new(signatures, 3, null);
+            if (fresh != null) {
+                return fresh;
+            }
+        } catch (Throwable ignored) {
+        }
+        PackageParser.SigningDetails shared = PackageParser.SigningDetails.UNKNOWN;
+        BRPackageParserSigningDetails.get(shared)._set_signatures(signatures);
+        return shared;
     }
 
     public static ActivityInfo generateActivityInfo(BPackage.Activity a, int flags, BPackageUserState state, int userId) {
