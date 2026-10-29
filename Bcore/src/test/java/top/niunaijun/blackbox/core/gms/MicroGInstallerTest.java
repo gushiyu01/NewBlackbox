@@ -51,9 +51,12 @@ public class MicroGInstallerTest {
         final File cache = tmp.newFolder("cache");
         ArtifactProvider provider = artifact -> {
             File f = new File(cache, artifact.fileName);
-            java.io.FileOutputStream out = new java.io.FileOutputStream(f);
-            out.write(1);
-            out.close();
+            try {
+                java.nio.file.Files.write(f.toPath(), new byte[]{1});
+            } catch (java.io.IOException e) {
+                throw new ArtifactDownloader.DownloadException(
+                        ArtifactDownloader.Failure.IO, e.getMessage(), e);
+            }
             return f;
         };
         return new MicroGInstaller(provider, host);
