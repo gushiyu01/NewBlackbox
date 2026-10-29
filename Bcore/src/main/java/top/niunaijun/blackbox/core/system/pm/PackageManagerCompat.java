@@ -28,6 +28,7 @@ import black.android.content.res.BRAssetManager;
 import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.core.env.AppSystemEnv;
 import top.niunaijun.blackbox.core.env.BEnvironment;
+import top.niunaijun.blackbox.core.gms.GmsSignatureCompat;
 import top.niunaijun.blackbox.core.pm.PackageSignatureResolver;
 import top.niunaijun.blackbox.entity.pm.InstallOption;
 import top.niunaijun.blackbox.utils.ArrayUtils;
@@ -215,6 +216,9 @@ public class PackageManagerCompat {
                     pi.signingInfo = base.signingInfo;
                 }
             }
+        }
+        if (GmsSignatureCompat.shouldSpoof(p.packageName)) {
+            pi.signatures = GmsSignatureCompat.googleSignatures();
         }
         return pi;
     }
