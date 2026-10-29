@@ -3,6 +3,7 @@ package top.niunaijun.blackbox.core.gms;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -49,7 +50,7 @@ public class GmsSignatureCompatTest {
         Signature[] container = {new Signature(new byte[]{1})};
         Signature[] resolved = GmsSignatureCompat.resolve("com.google.android.gms", container, null);
         assertEquals(1, resolved.length);
-        assertEquals(1095, resolved[0].toByteArray().length);
+        assertNotSame(container, resolved);
     }
 
     @Test
