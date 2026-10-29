@@ -67,7 +67,7 @@ public class MicroGInstallerTest {
         FakeHost host = new FakeHost();
         MicroGInstaller.Outcome outcome = installer(host).install(7);
         assertTrue(outcome.success());
-        assertEquals(2, outcome.steps.size());
+        assertEquals(MicroGArtifacts.artifacts().size(), outcome.steps.size());
         assertEquals(MicroGInstaller.Status.INSTALLED, outcome.steps.get(0).status);
     }
 
