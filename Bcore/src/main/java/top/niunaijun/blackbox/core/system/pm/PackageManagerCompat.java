@@ -28,6 +28,7 @@ import black.android.content.res.BRAssetManager;
 import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.core.env.AppSystemEnv;
 import top.niunaijun.blackbox.core.env.BEnvironment;
+import top.niunaijun.blackbox.core.pm.PackageSignatureResolver;
 import top.niunaijun.blackbox.entity.pm.InstallOption;
 import top.niunaijun.blackbox.utils.ArrayUtils;
 import top.niunaijun.blackbox.utils.FileUtils;
@@ -200,15 +201,13 @@ public class PackageManagerCompat {
         } catch (PackageManager.NameNotFoundException ignored) {
         }
         if ((flags & PackageManager.GET_SIGNATURES) != 0) {
-            if (base == null) {
-                pi.signatures = p.mSignatures;
-            } else {
-                pi.signatures = base.signatures;
-            }
+            pi.signatures = PackageSignatureResolver.preferContainer(
+                    p.mSignatures,
+                    base == null ? null : base.signatures);
         }
         if (BuildCompat.isPie()) {
             if ((flags & PackageManager.GET_SIGNING_CERTIFICATES) != 0) {
-                if (base == null) {
+                if (base == null || p.mSigningDetails != null) {
                     PackageParser.SigningDetails signingDetails = PackageParser.SigningDetails.UNKNOWN;
                     BRPackageParserSigningDetails.get(signingDetails)._set_signatures(p.mSigningDetails.signatures);
                     pi.signingInfo = BRSigningInfo.get()._new(signingDetails);
