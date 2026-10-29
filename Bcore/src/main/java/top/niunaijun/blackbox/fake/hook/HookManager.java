@@ -52,7 +52,6 @@ import top.niunaijun.blackbox.fake.service.MediaRecorderClassProxy;
 import top.niunaijun.blackbox.fake.service.SQLiteDatabaseProxy;
 import top.niunaijun.blackbox.fake.service.ClassLoaderProxy;
 import top.niunaijun.blackbox.fake.service.FileSystemProxy;
-import top.niunaijun.blackbox.fake.service.GmsProxy;
 import top.niunaijun.blackbox.fake.service.LevelDbProxy;
 import top.niunaijun.blackbox.fake.service.DeviceIdProxy;
 import top.niunaijun.blackbox.fake.service.GoogleAccountManagerProxy;
@@ -138,7 +137,6 @@ public class HookManager {
             addInjector(new SQLiteDatabaseProxy());
             addInjector(new ClassLoaderProxy());
             addInjector(new FileSystemProxy());
-            addInjector(new GmsProxy());
             addInjector(new LevelDbProxy());
             addInjector(new DeviceIdProxy());
             addInjector(new GoogleAccountManagerProxy());
